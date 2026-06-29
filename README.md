@@ -21,6 +21,7 @@ Cada módulo tiene **teoría + demostración** en su README y **laboratorios** (
 | Conexión | Acceso a GitHub, Codespaces, GHCR y Docker Hub sin bloqueos de firewall |
 | Equipo | ≥ 8 GB RAM recomendados; no instales Docker ni Kubernetes en local |
 | Infraestructura del curso | [infra/README.md](infra/README.md) |
+| Documentación de referencia | [docs/](docs/README.md) |
 | Problemas frecuentes | [labs/TROUBLESHOOTING.md](labs/TROUBLESHOOTING.md) |
 
 > El bloque **Azure (AKS)** es una **demostración del instructor**. No necesitas suscripción Azure.

@@ -15,7 +15,7 @@ Externalizar la configuración de la API demo para que **una sola imagen** funci
 
 ## En qué consiste
 
-Recorrerás el camino de una app «acoplada al lab» a una app **12-factor**: quitar secretos del código, inyectar config vía **variables de entorno** (en el lab usarás un fichero local como simulación) y exponer `/ready` para que cualquier orquestador sepa cuándo enviar tráfico.
+Recorrerás el camino de una app «acoplada al lab» a una app alineada con la [metodología 12-Factor](../../docs/12-factor-app.md): quitar secretos del código, inyectar config vía **variables de entorno** (en el lab usarás un fichero local como simulación) y exponer `/ready` para que cualquier orquestador sepa cuándo enviar tráfico.
 
 ## Mapa del ejercicio
 

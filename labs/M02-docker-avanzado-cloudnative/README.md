@@ -10,7 +10,7 @@
 Al terminar este módulo serás capaz de:
 
 - Explicar la diferencia entre **configuración** (cambia según entorno) y **código** (igual en todos los entornos).
-- Transformar una aplicación con parámetros embebidos en una app **cloudnative** usando variables de entorno.
+- Transformar una aplicación con parámetros embebidos en una app alineada con la [metodología 12-Factor](../../docs/12-factor-app.md).
 - Distinguir **liveness** (`/health`) y **readiness** (`/ready`) y por qué los orquestadores cloud los usan.
 - Leer y escribir un `Dockerfile` **multistage** con usuario no-root y capas optimizadas para caché.
 - Argumentar cuándo una optimización aporta seguridad, tamaño o velocidad de build — no solo MB en disco.
@@ -84,13 +84,13 @@ Tu app **solo debe leer configuración del entorno del proceso** (`os.environ`, 
 
 ### Los 12 factores relevantes para este módulo
 
-La metodología **12-Factor App** resume buenas prácticas para apps en la nube. De momento te interesan tres:
+La metodología **[12-Factor App](../../docs/12-factor-app.md)** resume buenas prácticas para apps en la nube. De momento te interesan tres (detalle completo en la doc de referencia):
 
 | Factor | Idea en una frase | Qué haces en la capa contenedor |
 |--------|-------------------|----------------------------------|
-| **III — Config** | Toda config en el entorno | La app lee variables; la imagen no lleva URLs ni passwords |
-| **IX — Disposability** | Arranque rápido y parada limpia | Endpoints `/health` y `/ready` estables |
-| **XII — Logs** | Logs como flujo de eventos | *(observabilidad — módulo posterior del curso)* |
+| **III — Config** | Toda config en el entorno | La app lee variables; la imagen no lleva URLs ni passwords → [factor III](../../docs/12-factor-app.md#iii--config) |
+| **IX — Disposability** | Arranque rápido y parada limpia | Endpoints `/health` y `/ready` estables → [factor IX](../../docs/12-factor-app.md#ix--disposability) |
+| **XI — Logs** | Logs como flujo de eventos | *(observabilidad — módulo posterior)* → [factor XI](../../docs/12-factor-app.md#xi--logs) |
 
 ### Health vs Ready: contrato con cualquier orquestador
 

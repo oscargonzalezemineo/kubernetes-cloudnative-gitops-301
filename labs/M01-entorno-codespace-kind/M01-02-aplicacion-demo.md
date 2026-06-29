@@ -79,7 +79,7 @@ Abre `infra/app/api/api.py` y señala dónde están las credenciales de Postgres
 
 ### 1 — Lista de cambios cloudnative
 
-Anota tres cambios mínimos para hacer la app «cloudnative-ready» antes de M02-01 (pista: 12-factor, health checks, secretos).
+Anota tres cambios mínimos para hacer la app «cloudnative-ready» antes de M02-01 (pista: [12-Factor](../../docs/12-factor-app.md), health checks, secretos).
 
 <details>
 <summary>Ver orientación</summary>
