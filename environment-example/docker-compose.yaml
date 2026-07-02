@@ -1,0 +1,76 @@
+services:
+  # billing:
+  api:  
+    build:
+      context: ./builds/nodejs
+    volumes:
+      - ./src/api:/app
+    working_dir: /app
+    command:
+      - npm
+      - start
+    ports:
+      - 3000:3000
+  # bbdd:
+  frontend:
+    build: 
+      context: ./builds/angular
+    volumes:
+      - ./src/frontend/mi-app:/app
+    working_dir: /app
+    command:
+      - npm 
+      - start 
+    ports:
+      - 4200:4200
+  # redis:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
+      MYSQL_USER: demo
+      MYSQL_PASSWORD: demo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8085:80"
+
+
+
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+
+
+
+
+
+
+volumes:
+  mysql_data:
