@@ -83,16 +83,16 @@ DATABASE_URL: postgres://lab:lab@postgres:5432/lab
 
 **Acción:** `api-deployment.yaml` con:
 
-| Campo | Valor |
-|-------|-------|
-| `image` | `cloudnative-demo-api:local` |
-| `imagePullPolicy` | `IfNotPresent` |
-| `replicas` | `2` |
-| `livenessProbe` | `GET /health:8081` |
-| `readinessProbe` | `GET /ready:8081` |
-| `envFrom` | configMapRef + secretRef |
+| Campo | Valor | Qué comprueba |
+|-------|-------|---------------|
+| `image` | `cloudnative-demo-api:local` | Imagen local en kind |
+| `imagePullPolicy` | `IfNotPresent` | No pull si ya está cargada |
+| `replicas` | `2` | Dos Pods |
+| `livenessProbe` | `GET /health:8081` | ¿Proceso vivo? (no mira Postgres) |
+| `readinessProbe` | `GET /ready:8081` | ¿Listo para tráfico? (Postgres + Redis) |
+| `envFrom` | configMapRef + secretRef | Variables de entorno |
 
-**Por qué:** Los probes de /health y /ready son el contrato estándar en Flask — igual que usarías en AKS o EKS.
+**Por qué importa para el rollout:** Kubernetes **solo marca el Pod Ready** si `readinessProbe` recibe **200**. Un rolling update **no termina** mientras los Pods nuevos no pasen esa sonda. Si `/ready` devuelve 503, verás `rollout status` atascado (lo practicas en M03-02).
 
 Crea `api-service.yaml` (ClusterIP, puerto 8081).
 
@@ -158,9 +158,9 @@ curl -s http://127.0.0.1:8081/work | jq .
 
 → Rotación y permisos distintos; los secretos no van en texto plano en Git en producción.
 
-**¿Qué probe usa Flask para Kubernetes?**
+**¿Por qué se queda atascado `kubectl rollout status`?**
 
-→ Liveness en `/health` y readiness en `/ready` (M02-01).
+→ Porque la **readinessProbe** (`GET /ready`) no recibe HTTP 200. Sin Postgres, `/ready` devuelve 503, el Pod no pasa a Ready y el rolling update no avanza.
 
 ## Errores frecuentes
 

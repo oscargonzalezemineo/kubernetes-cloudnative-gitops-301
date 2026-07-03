@@ -6,26 +6,51 @@
 
 Practicar **rolling update**, detectar una versión mala y hacer **rollback** sobre el Deployment de la **API Flask**.
 
+## Por qué se atasca `kubectl rollout status` (léelo primero)
+
+**Respuesta directa:** el rollout se queda esperando porque la **sonda de readiness** (`readinessProbe`) **no recibe HTTP 200** en `GET /ready`. Mientras el Pod no pase esa comprobación, Kubernetes **no da el despliegue por terminado**.
+
+Cadena causa → efecto:
+
+```text
+1. Defines readinessProbe en el Deployment:
+      cada X segundos → GET http://<pod>:8081/ready
+
+2. Flask responde en /ready (M02-01):
+      Postgres OK + Redis OK  →  HTTP 200  →  Pod marcado Ready
+      Postgres o Redis fallan   →  HTTP 503  →  Pod NO Ready
+
+3. Durante un rolling update:
+      Kubernetes crea Pods nuevos
+      y ESPERA a que pasen el readinessProbe
+      antes de seguir con el resto del update.
+
+4. Si /ready devuelve 503 (típico: Postgres no desplegado):
+      readinessProbe falla una y otra vez
+      → columna READY del Pod: 0/1
+      → rollout status: "Waiting for deployment ... replicas have been updated..."
+      → el comando no termina (no es que el terminal esté roto).
+```
+
+**Resumen en una frase:** *Running* significa que el contenedor arrancó; *Ready* significa que la sonda `/ready` respondió OK. Sin Ready, no hay rollout completado.
+
+> [!IMPORTANT]
+> En M03-01 el Secret apunta a `postgres:5432`, pero el servicio Postgres **no existe hasta que lo despliegues**. Entonces `/ready` devuelve **503**, la sonda falla, y el rollout se atasca. **No es por el `rollout restart` ni por cambiar el ConfigMap** — es la sonda que no ve OK.
+
 ## Prerrequisitos
 
 - M03-01 completado (manifiestos aplicados en `cloudnative-lab`).
-- **PostgreSQL desplegado en el clúster** (ver bloque siguiente — obligatorio para este lab).
+- **PostgreSQL desplegado en el clúster** (sin Postgres, `/ready` → 503 → sonda falla → rollout atascado).
 
-> [!IMPORTANT]
-> **Lee esto antes de empezar — evita el error más frecuente del lab**
+> [!NOTE]
+> **Running ≠ Ready**
 >
-> En Kubernetes un Pod puede estar **`Running`** y aun así **`0/1 Ready`**.
+> | Columna | Qué comprueba Kubernetes |
+> |---------|--------------------------|
+> | `STATUS: Running` | El proceso del contenedor está vivo. |
+> | `READY: 1/1` | La **readinessProbe** obtuvo **HTTP 200** en `/ready`. |
 >
-> | Estado | Significado |
-> |--------|-------------|
-> | `Running` | El contenedor arrancó (proceso `python api.py` vivo). |
-> | `Ready` | El **readinessProbe** recibió HTTP **200** en `GET /ready`. |
->
-> Tu API Flask implementó `/ready` en M02-01 para comprobar **Postgres + Redis**. Si Postgres **no existe** en el clúster, `/ready` responde **503** → el Pod **nunca** pasa a Ready → `kubectl rollout status` **se queda esperando para siempre**.
->
-> Eso **no es un fallo del terminal** ni del `rollout restart`. Es Kubernetes haciendo su trabajo: no da por bueno un despliegue cuyos Pods declaran que no están listos para recibir tráfico.
->
-> **No confundas:** cambiar `SERVICE_NAME` en el ConfigMap **no rompe** `/ready`. Si el rollout se atasca, la causa casi siempre es readiness (Postgres ausente o Redis caído), no el cambio de variable.
+> Puedes tener `Running` + `0/1 Ready` a la vez. Eso significa: la app arrancó, pero la sonda dice «aún no recibo tráfico».
 
 ## Antes de empezar
 
@@ -120,9 +145,11 @@ kubectl -n cloudnative-lab get pods -l app=demo-api -w
 
 **Qué ocurre por dentro:**
 
-1. `rollout restart` crea Pods nuevos con la config actualizada.
-2. Kubernetes espera a que los Pods **nuevos** pasen el readinessProbe (`GET /ready`).
-3. Solo entonces termina Pods viejos y el mensaje pasa a `successfully rolled out`.
+1. `rollout restart` crea Pods nuevos.
+2. El **kubelet** ejecuta la **readinessProbe** (`GET /ready`) cada pocos segundos.
+3. Si la respuesta **no es 200**, el Pod sigue en `0/1 Ready`.
+4. El controlador del Deployment **no avanza** el rolling update hasta que los Pods nuevos pasen la sonda.
+5. `rollout status` imprime «Waiting…» porque está esperando ese **OK de la sonda**, no porque el terminal esté colgado.
 
 **Verificar el cambio:**
 
@@ -185,9 +212,9 @@ kubectl -n cloudnative-lab get pods -l app=demo-api -w
 Waiting for deployment "demo-api" rollout to finish: 1 out of 2 new replicas have been updated...
 ```
 
-Y `kubectl get pods` muestra `Running` pero **`0/1`** en READY.
+**Causa (siempre la misma lógica):** la **readinessProbe** no obtiene HTTP 200 en `/ready`. El Pod queda `Running` pero `0/1 Ready` y el Deployment no puede completar el update.
 
-**Causa:** El readinessProbe llama a `/ready`; Flask devuelve **503** porque Postgres o Redis no responden.
+**Por qué `/ready` no da OK en este curso:** Flask comprueba Postgres + Redis. Sin Postgres en el clúster → HTTP **503** → la sonda falla.
 
 **Diagnóstico (copia y pega):**
 
